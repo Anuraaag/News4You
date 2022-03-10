@@ -11,7 +11,7 @@ import {
 } from "react-router-dom";
 
 export default class App extends Component {
-  pageSize = 9
+  pageSize = 6
   render() {
     return (
 

@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import Load from './Load'
 import NewsItem from './NewsItem'
 import PropTypes from 'prop-types'
+import InfiniteScroll from 'react-infinite-scroll-component'
 
 export class News extends Component {
 
@@ -22,9 +23,9 @@ export class News extends Component {
         super(props)
         this.state = {
             articles: [],
-            loading: false,
+            loading: true,
             currentPage: 1,
-            pageCount: 0,
+            totalResults: 0,
         }
         document.title = `${this.props.category} - News 4 U`
     }
@@ -41,85 +42,68 @@ export class News extends Component {
     async componentDidMount() {
         let data = await this.fetchNews();
 
-        // console.log(data.totalResults) //70 here but only 38 results given + shows 38 only when hit on browser
-        if (data.status === "ok" && data.totalResults > 0) {
-            // this.setState({ pageCount: Math.ceil(data.totalResults / this.props.pageSize) })
-            this.setState({ pageCount: 13 }) // hardcoding because of the above mentioned bug in API
-            this.setState({ articles: data.articles })
-        }
-    }
-
-
-    updateData = async (offset) => {
-        let data = await this.fetchNews();
-    
         if (data.status === "ok" && data.totalResults > 0) {
             this.setState({ loading: false })
-            this.setState({currentPage: this.state.currentPage + offset})        
+            this.setState({ totalResults: data.totalResults })
             this.setState({ articles: data.articles })
-        } 
-    }
-    
-    
-    loadandUpdate = offset => {
-        this.setState({ articles: [] })
-        this.setState({ loading: true })
-        this.updateData(offset)
-    }
-
-
-    loadPrev = async (e) => { 
-        if(this.state.currentPage > 1) {
-
-            if(this.state.currentPage < this.state.pageCount){
-                e.target.nextElementSibling.disabled = false
-            }
-            if(this.state.currentPage === 2){
-                e.target.disabled = true
-            }
-            this.loadandUpdate(-1)
         }
     }
 
 
-    loadNext = async (e) => {
-        if(this.state.currentPage < this.state.pageCount) {
+    fetchMoreData = async () => {
+        let data = await this.fetchNews();
 
-            if(this.state.currentPage >= 1){
-                e.target.previousElementSibling.disabled = false
-            }
-            if(this.state.currentPage === this.state.pageCount - 1){
-                e.target.disabled = true
-            }
-            this.loadandUpdate(1)
+        if (data.status === "ok") {
+            this.setState({ currentPage: this.state.currentPage + 1 })
+            this.setState({ articles: this.state.articles.concat(data.articles) })
         }
-    } 
-
+    }
+    
 
     render() {
         return (
             <div className='container my-4'>
                 <h2 className='text-center mb-5'> News 4 You – Top {this.props.category} Headlines</h2>
-                
-                {this.state.loading && <Load />}
-                
-                <div className="row">
-                    {this.state.articles.map(
-                        element => {
-                            return <div className="col-md-4" key={element.url}>
-                                <NewsItem title={element.title ? element.title : `News Title`} imageUrl={element.urlToImage ? element.urlToImage : `https://nerdist.com/wp-content/uploads/2020/07/maxresdefault.jpg`} newsUrl={element.url ? element.url : `\\`}
-                                    description={element.description ? (element.description.length > 130 ? `${element.description.slice(0, 120)}...` : element.description) : `News Description`} 
-                                    author={element.author ? element.author : `Unknown`} date={element.publishedAt ? (new Date(element.publishedAt)).toGMTString() : `some day`}
-                                    source={element.source.name ? element.source.name : `Unknown`} />
-                            </div>
-                        }
-                    )}
-                </div>
 
-                <div className='container my-5 d-flex justify-content-between'>
-                    <button type='button' className="btn btn-sm btn-primary py-2 px-3 disabled" onClick={this.loadPrev}>&larr; &nbsp; Prev</button>
-                    <button type='button' className="btn btn-sm btn-primary p-2 px-3" onClick={this.loadNext}>Next &nbsp; &rarr;</button>
-                </div>
+                {this.state.loading && <Load />}
+
+                <InfiniteScroll
+                    dataLength={this.state.articles.length} 
+                    next={this.fetchMoreData} // Automatically awaits the response, so no need to use await
+                    hasMore={this.state.articles.length < this.state.totalResults}
+                    loader={<Load />}
+                    endMessage={
+                        <p style={{ textAlign: 'center' }}>
+                            <b>Yay! You have seen it all</b>
+                        </p>
+                    }
+                    style={{overflow: "hidden"}}
+                    // below props only if you need pull down functionality
+                    // refreshFunction={this.refresh}
+                    // pullDownToRefresh
+                    // pullDownToRefreshThreshold={50}
+                    // pullDownToRefreshContent={
+                    //     <h3 style={{ textAlign: 'center' }}>&#8595; Pull down to refresh</h3>
+                    // }
+                    // releaseToRefreshContent={
+                    //     <h3 style={{ textAlign: 'center' }}>&#8593; Release to refresh</h3>
+                    // }
+                >
+
+                    <div className="row">
+                        {this.state.articles.map(
+                            (element) => {
+                                return <div className="col-md-4" key={element.url}>
+                                    <NewsItem title={element.title ? element.title : `News Title`} imageUrl={element.urlToImage ? element.urlToImage : `https://nerdist.com/wp-content/uploads/2020/07/maxresdefault.jpg`} newsUrl={element.url ? element.url : `\\`}
+                                        description={element.description ? (element.description.length > 130 ? `${element.description.slice(0, 120)}...` : element.description) : `News Description`}
+                                        author={element.author ? element.author : `Unknown`} date={element.publishedAt ? (new Date(element.publishedAt)).toGMTString() : `some day`}
+                                        source={element.source.name ? element.source.name : `Unknown`} />
+                                </div>
+                            }
+                        )}
+                    </div>
+                </InfiniteScroll>
+
             </div>
         )
     }
