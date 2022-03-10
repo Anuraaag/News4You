@@ -4,6 +4,7 @@ import NewsItem from './NewsItem'
 import PropTypes from 'prop-types'
 import InfiniteScroll from 'react-infinite-scroll-component'
 
+
 export class News extends Component {
 
     static defaultProps = {
@@ -32,10 +33,13 @@ export class News extends Component {
 
 
     async fetchNews() {
+		this.props.setProgress(20)
         let url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}&category=${this.props.category}&sortBy=popularity&apiKey=b7dc570cdef848a3b1ae9518a91eb77a&page=${this.state.currentPage}&pageSize=${this.props.pageSize}`
         let data = await fetch(url)
+		this.props.setProgress(30)
         let json = await data.json()
-        return json
+		this.props.setProgress(70)
+		return json
     }
 
 
@@ -46,6 +50,7 @@ export class News extends Component {
             this.setState({ loading: false })
             this.setState({ totalResults: data.totalResults })
             this.setState({ articles: data.articles })
+			this.props.setProgress(100)
         }
     }
 
@@ -56,9 +61,10 @@ export class News extends Component {
         if (data.status === "ok") {
             this.setState({ currentPage: this.state.currentPage + 1 })
             this.setState({ articles: this.state.articles.concat(data.articles) })
+			this.props.setProgress(100)
         }
     }
-    
+
 
     render() {
         return (
@@ -68,26 +74,17 @@ export class News extends Component {
                 {this.state.loading && <Load />}
 
                 <InfiniteScroll
-                    dataLength={this.state.articles.length} 
+                    dataLength={this.state.articles.length}
                     next={this.fetchMoreData} // Automatically awaits the response, so no need to use await
                     hasMore={this.state.articles.length < this.state.totalResults}
                     loader={<Load />}
                     endMessage={
-                        <p style={{ textAlign: 'center' }}>
-                            <b>Yay! You have seen it all</b>
-                        </p>
+                        <div style={{ textAlign: 'center' }} className="my-5">
+                            <p> <b>You're All Caught Up</b></p>
+                            <p className="card-text"><small className="text-muted">You've seen all the latest headlines</small></p>
+                        </div>
                     }
-                    style={{overflow: "hidden"}}
-                    // below props only if you need pull down functionality
-                    // refreshFunction={this.refresh}
-                    // pullDownToRefresh
-                    // pullDownToRefreshThreshold={50}
-                    // pullDownToRefreshContent={
-                    //     <h3 style={{ textAlign: 'center' }}>&#8595; Pull down to refresh</h3>
-                    // }
-                    // releaseToRefreshContent={
-                    //     <h3 style={{ textAlign: 'center' }}>&#8593; Release to refresh</h3>
-                    // }
+                    style={{ overflow: "hidden" }}
                 >
 
                     <div className="row">
