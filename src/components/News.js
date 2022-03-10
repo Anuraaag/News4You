@@ -44,13 +44,13 @@ export class News extends Component {
 
 
     async componentDidMount() {
-console.log("apikey -> "+this.props.news_api_key)
 		let data = await this.fetchNews();
 
         if (data.status === "ok" && data.totalResults > 0) {
             this.setState({ loading: false })
             this.setState({ totalResults: data.totalResults })
             this.setState({ articles: data.articles })
+			this.setState({ currentPage: this.state.currentPage + 1 })
 			this.props.setProgress(100)
         }
     }
@@ -70,7 +70,7 @@ console.log("apikey -> "+this.props.news_api_key)
     render() {
         return (
             <div className='container my-4'>
-                <h2 className='text-center mb-5'> News 4 You – Top {this.props.category} Headlines</h2>
+                <h2 className='text-center mb-5'> Top {this.props.category} Headlines</h2>
 
                 {this.state.loading && <Load />}
 
