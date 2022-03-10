@@ -7,7 +7,7 @@ export class News extends Component {
 
     static defaultProps = {
         country: 'in',
-        pageSize: 3,
+        pageSize: 9,
         category: "general"
     }
 
@@ -17,43 +17,56 @@ export class News extends Component {
         category: PropTypes.string
     }
 
-    constructor() {
-        super()
+
+    constructor(props) {
+        super(props)
         this.state = {
             articles: [],
             loading: false,
             currentPage: 1,
             pageCount: 0,
         }
+        document.title = `${this.props.category} - News 4 U`
     }
 
-    async componentDidMount() {
+
+    async fetchNews() {
         let url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}&category=${this.props.category}&sortBy=popularity&apiKey=b7dc570cdef848a3b1ae9518a91eb77a&page=${this.state.currentPage}&pageSize=${this.props.pageSize}`
         let data = await fetch(url)
         let json = await data.json()
+        return json
+    }
 
-        // console.log(json.totalResults) //70 here but only 38 results given + shows 38 only when hit on browser
-        if (json.status === "ok" && json.totalResults > 0) {
-            // this.setState({ pageCount: Math.ceil(json.totalResults / this.props.pageSize) })
+
+    async componentDidMount() {
+        let data = await this.fetchNews();
+
+        // console.log(data.totalResults) //70 here but only 38 results given + shows 38 only when hit on browser
+        if (data.status === "ok" && data.totalResults > 0) {
+            // this.setState({ pageCount: Math.ceil(data.totalResults / this.props.pageSize) })
             this.setState({ pageCount: 13 }) // hardcoding because of the above mentioned bug in API
-            this.setState({ articles: json.articles })
+            this.setState({ articles: data.articles })
         }
     }
 
 
     updateData = async (offset) => {
-
-        let url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}&sortBy=popularity&apiKey=b7dc570cdef848a3b1ae9518a91eb77a&page=${this.state.currentPage + offset}&pageSize=${this.props.pageSize}`
-        let data = await fetch(url)
-        let json = await data.json()
+        let data = await this.fetchNews();
     
-        if (json.status === "ok" && json.totalResults > 0) {
+        if (data.status === "ok" && data.totalResults > 0) {
             this.setState({ loading: false })
             this.setState({currentPage: this.state.currentPage + offset})        
-            this.setState({ articles: json.articles })
+            this.setState({ articles: data.articles })
         } 
     }
     
+    
+    loadandUpdate = offset => {
+        this.setState({ articles: [] })
+        this.setState({ loading: true })
+        this.updateData(offset)
+    }
+
 
     loadPrev = async (e) => { 
         if(this.state.currentPage > 1) {
@@ -64,18 +77,12 @@ export class News extends Component {
             if(this.state.currentPage === 2){
                 e.target.disabled = true
             }
-            this.setState({ articles: [] })
-            this.setState({ loading: true })
-            this.updateData(-1)
+            this.loadandUpdate(-1)
         }
     }
 
 
     loadNext = async (e) => {
-
-        console.log(this.state.currentPage)
-        console.log(this.state.pageCount)
-        console.log("-----")
         if(this.state.currentPage < this.state.pageCount) {
 
             if(this.state.currentPage >= 1){
@@ -84,9 +91,7 @@ export class News extends Component {
             if(this.state.currentPage === this.state.pageCount - 1){
                 e.target.disabled = true
             }
-            this.setState({ articles: [] })
-            this.setState({ loading: true })
-            this.updateData(1)
+            this.loadandUpdate(1)
         }
     } 
 
@@ -94,7 +99,7 @@ export class News extends Component {
     render() {
         return (
             <div className='container my-4'>
-                <h2 className='text-center mb-5'> News 4 You - Shorts</h2>
+                <h2 className='text-center mb-5'> News 4 You – Top {this.props.category} Headlines</h2>
                 
                 {this.state.loading && <Load />}
                 
